@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Android Launcher Preview</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(180deg, #121212 0%, #000000 100%);
+            --sidebar-width: 90px;
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #ffffff;
+            font-family: var(--font-family);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .launcher-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-gradient);
+            transition: background 0.5s ease;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100%;
+            background: rgba(10, 10, 10, 0.7);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 48px;
+            box-sizing: border-box;
+            backdrop-filter: blur(20px);
+            z-index: 10;
+        }
+
+        .sidebar-logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-bottom: 48px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .menu-item {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px solid transparent;
+        }
+
+        .menu-item svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .menu-item.active {
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Content Area */
+        .content-pane {
+            flex: 1;
+            height: 100%;
+            padding: 48px 64px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Top Bar Styling */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .time-date {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+
+        .time {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .date {
+            font-size: 1.1rem;
+            color: #888888;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            fill: #ffffff;
+            opacity: 0.8;
+        }
+
+        /* View Panels */
+        .panel {
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+            height: calc(100% - 100px);
+        }
+
+        .panel.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 0.5px;
+        }
+
+        /* Horizontal Tv Rows */
+        .tv-row {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+            overflow-x: auto;
+            margin-bottom: 36px;
+        }
+
+        .tv-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* App Card Styling */
+        .app-card {
+            width: 130px;
+            height: 150px;
+            background: rgba(30, 30, 30, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .app-card img {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .app-card span {
+            font-size: 0.9rem;
+            color: #dddddd;
+            font-weight: 500;
+            text-align: center;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .app-card:hover {
+            transform: scale(1.12);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5), 0 0 0 2px #ffffff;
+        }
+
+        .app-card:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Search Panel */
+        .search-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            padding: 0 24px;
+            margin-bottom: 40px;
+        }
+
+        .search-input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 1.1rem;
+            width: 100%;
+            outline: none;
+        }
+
+        /* Wallpaper Picker Grid */
+        .wallpaper-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .wallpaper-item {
+            aspect-ratio: 1.77;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .wallpaper-item:hover {
+            transform: scale(1.05);
+            border-color: #ffffff;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        /* Settings View */
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 700px;
+        }
+
+        .settings-card {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-info h3 {
+            margin: 0 0 6px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .settings-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #888888;
+        }
+
+        .btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Dialogs */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(15px);
+        }
+
+        .dialog {
+            background: #0f0f0f;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dialog h3 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .dialog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .dialog-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dialog-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="launcher-container" id="launcher">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">CAL</div>
+            <div class="sidebar-menu">
+                <div class="menu-item active" onclick="switchTab('home', this)" title="Home">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                </div>
+                <div class="menu-item" onclick="switchTab('search', this)" title="Search">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </div>
+                <div class="menu-item" onclick="switchTab('bluetooth', this)" title="Bluetooth">
+                    <svg viewBox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.29L13 18.17v-3.76l1.88 1.88z"/></svg>
+                </div>
+                <div class="menu-item" onclick="switchTab('wallpaper', this)" title="Wallpaper">
+                    <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.08-.54-.42-.99-.93-1.19l-1.3-.52c-.67-.27-1.17-.83-1.35-1.52L16 9.41V8c0-1.1-.9-2-2-2h-2V3z"/></svg>
+                </div>
+                <div class="menu-item" onclick="switchTab('settings', this)" title="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-pane">
+            <!-- Topbar (Clock, Status, etc) -->
+            <div class="topbar">
+                <div class="time-date">
+                    <span class="time" id="clock">21:26</span>
+                    <span class="date" id="date">Wednesday, Jul 15</span>
+                </div>
+                <div class="status-indicators">
+                    <!-- Wifi Connected (Ethernet supported check) -->
+                    <svg class="status-icon" viewBox="0 0 24 24"><path d="M12 21l-12-12c4.97-4.97 13.03-4.97 18 0l-6 12zm0-18C8.13 3 5 4.56 5 6.5s3.13 3.5 7 3.5 7-1.56 7-3.5S15.87 3 12 3z"/></svg>
+                    <!-- Bluetooth enabled -->
+                    <svg class="status-icon" viewBox="0 0 24 24" style="fill: #2196F3;"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83z"/></svg>
+                    <!-- Battery Outline -->
+                    <svg class="status-icon" viewBox="0 0 24 24"><path d="M17 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm1 10h-2V9h2v6zm4-5h-2v4h2v-4z"/></svg>
+                </div>
+            </div>
+
+            <!-- Home Tab Panel -->
+            <div class="panel active" id="panel-home">
+                <div class="section-title">Favorites</div>
+                <div class="tv-row">
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/youtube-play.png" alt="YouTube">
+                        <span>YouTube</span>
+                    </div>
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/netflix--v1.png" alt="Netflix">
+                        <span>Netflix</span>
+                    </div>
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/plex.png" alt="Plex">
+                        <span>Plex</span>
+                    </div>
+                </div>
+
+                <div class="section-title">All Apps</div>
+                <div class="tv-row">
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/spotify--v1.png" alt="Spotify">
+                        <span>Spotify</span>
+                    </div>
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/twitch.png" alt="Twitch">
+                        <span>Twitch</span>
+                    </div>
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/color/512/chrome.png" alt="Browser">
+                        <span>Browser</span>
+                    </div>
+                    <div class="app-card">
+                        <img src="https://img.icons8.com/fluency/512/settings.png" alt="Settings">
+                        <span>Settings</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Tab Panel -->
+            <div class="panel" id="panel-search">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="search-bar" placeholder="Search apps..." oninput="filterApps()">
+                </div>
+                <div class="section-title">Results</div>
+                <div class="tv-row" id="search-results">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <!-- Bluetooth Tab Panel -->
+            <div class="panel" id="panel-bluetooth">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div class="section-title" style="margin: 0;">Paired Devices</div>
+                    <button class="btn btn-outline" onclick="openPairingDialog()">+ Add New Device</button>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-card" onclick="connectDevice('Sony WH-1000XM4')">
+                        <div class="settings-info">
+                            <h3>Sony WH-1000XM4</h3>
+                            <p>Headphones • 38:18:A2:BC:60:E1</p>
+                        </div>
+                        <span id="state-Sony" style="color: #888888;">Disconnected</span>
+                    </div>
+                    <div class="settings-card" onclick="connectDevice('Xbox Wireless Controller')">
+                        <div class="settings-info">
+                            <h3>Xbox Wireless Controller</h3>
+                            <p>Game Controller • 00:1A:7D:DA:71:11</p>
+                        </div>
+                        <span id="state-Xbox" style="color: #888888;">Disconnected</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallpaper Tab Panel -->
+            <div class="panel" id="panel-wallpaper">
+                <div class="section-title">Sample Wallpapers</div>
+                <div class="wallpaper-grid">
+                    <div class="wallpaper-item" style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80');" onclick="changeBg('url(https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80)')"></div>
+                    <div class="wallpaper-item" style="background-image: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=400&q=80');" onclick="changeBg('url(https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1920&q=80)')"></div>
+                    <div class="wallpaper-item" style="background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&q=80');" onclick="changeBg('url(https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920&q=80)')"></div>
+                    <div class="wallpaper-item" style="background-image: url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&q=80');" onclick="changeBg('url(https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&q=80)')"></div>
+                </div>
+                <div class="section-title">Solid Colors</div>
+                <div class="wallpaper-grid">
+                    <div class="wallpaper-item" style="background-color: #000000; border: 1px solid rgba(255,255,255,0.1);" onclick="changeBg('linear-gradient(180deg, #121212 0%, #000000 100%)')"></div>
+                    <div class="wallpaper-item" style="background-color: #0B1A10;" onclick="changeBg('linear-gradient(180deg, #0B1A10 0%, #000000 100%)')"></div>
+                    <div class="wallpaper-item" style="background-color: #0A1128;" onclick="changeBg('linear-gradient(180deg, #0A1128 0%, #000000 100%)')"></div>
+                    <div class="wallpaper-item" style="background-color: #1C0F1A;" onclick="changeBg('linear-gradient(180deg, #1C0F1A 0%, #000000 100%)')"></div>
+                </div>
+            </div>
+
+            <!-- Settings Tab Panel -->
+            <div class="panel" id="panel-settings">
+                <div class="section-title">Launcher Configuration</div>
+                <div class="settings-container">
+                    <div class="settings-card" onclick="openRemapDialog()">
+                        <div class="settings-info">
+                            <h3>Remote Key Mapping</h3>
+                            <p>Assign custom apps or shortcuts to remote control buttons</p>
+                        </div>
+                        <button class="btn btn-outline">Configure</button>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-info">
+                            <h3>App Columns Grid</h3>
+                            <p>Adjust column sizing options</p>
+                        </div>
+                        <select style="background: #111; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 8px;">
+                            <option>5 Columns</option>
+                            <option>6 Columns</option>
+                            <option>7 Columns</option>
+                        </select>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-info">
+                            <h3>Manage Hidden Apps</h3>
+                            <p>Restore hidden applications to launcher view</p>
+                        </div>
+                        <button class="btn btn-outline">Manage</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pair Dialog -->
+    <div class="overlay" id="pair-dialog">
+        <div class="dialog">
+            <h3>Add New Device</h3>
+            <p style="color: #888; font-size: 0.95rem; margin-top:-10px;">Scanning for Bluetooth devices near you...</p>
+            <div class="dialog-list">
+                <div class="dialog-item" onclick="closePairingDialog()">
+                    <span>Bravia Soundbar</span>
+                    <span style="color:#2196F3">Pair</span>
+                </div>
+                <div class="dialog-item" onclick="closePairingDialog()">
+                    <span>Living Room TV Accessory</span>
+                    <span style="color:#2196F3">Pair</span>
+                </div>
+            </div>
+            <button class="btn" onclick="closePairingDialog()" style="margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Remap Dialog -->
+    <div class="overlay" id="remap-dialog">
+        <div class="dialog">
+            <h3>Remote Key Remapper</h3>
+            <p style="color: #88; font-size: 0.95rem; margin-top:-10px;">Press a key on your remote or select a button below:</p>
+            <div class="dialog-list">
+                <div class="dialog-item" onclick="mapButton('RED Button')">
+                    <span>RED (F1) Button</span>
+                    <span style="color:#888">Unassigned</span>
+                </div>
+                <div class="dialog-item" onclick="mapButton('GREEN Button')">
+                    <span>GREEN (F2) Button</span>
+                    <span style="color:#888">Unassigned</span>
+                </div>
+                <div class="dialog-item" onclick="mapButton('BLUE Button')">
+                    <span>BLUE (F3) Button</span>
+                    <span style="color:#888">Unassigned</span>
+                </div>
+                <div class="dialog-item" onclick="mapButton('Channel Up')">
+                    <span>Channel Up</span>
+                    <span style="color:#888">Unassigned</span>
+                </div>
+            </div>
+            <button class="btn" onclick="closeRemapDialog()" style="margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+            
+            el.classList.add('active');
+            document.getElementById('panel-' + tabId).classList.add('active');
+
+            if(tabId === 'search') {
+                filterApps();
+            }
+        }
+
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = hours + ':' + minutes;
+            
+            const options = { weekday: 'long', month: 'short', day: 'numeric' };
+            document.getElementById('date').textContent = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Change Background
+        function changeBg(bgString) {
+            document.getElementById('launcher').style.background = bgString;
+        }
+
+        // Bluetooth Connect
+        function connectDevice(name) {
+            const shortName = name.split(' ')[0];
+            const stateText = document.getElementById('state-' + shortName);
+            stateText.textContent = "Connecting...";
+            stateText.style.color = "#FFC107";
+
+            setTimeout(() => {
+                stateText.textContent = "Connected";
+                stateText.style.color = "#4CAF50";
+            }, 2000);
+        }
+
+        // Pairing dialogue
+        function openPairingDialog() {
+            document.getElementById('pair-dialog').style.display = 'flex';
+        }
+        function closePairingDialog() {
+            document.getElementById('pair-dialog').style.display = 'none';
+        }
+
+        // Remap dialogue
+        function openRemapDialog() {
+            document.getElementById('remap-dialog').style.display = 'flex';
+        }
+        function closeRemapDialog() {
+            document.getElementById('remap-dialog').style.display = 'none';
+        }
+        function mapButton(btnName) {
+            alert("Press a button on your remote then choose the App you want to launch. Handled via android.view.KeyEvent in APK.");
+            closeRemapDialog();
+        }
+
+        // Search filtering simulation
+        const apps = [
+            { name: "YouTube", icon: "https://img.icons8.com/color/512/youtube-play.png" },
+            { name: "Netflix", icon: "https://img.icons8.com/color/512/netflix--v1.png" },
+            { name: "Plex", icon: "https://img.icons8.com/color/512/plex.png" },
+            { name: "Spotify", icon: "https://img.icons8.com/color/512/spotify--v1.png" },
+            { name: "Twitch", icon: "https://img.icons8.com/color/512/twitch.png" },
+            { name: "Browser", icon: "https://img.icons8.com/color/512/chrome.png" },
+            { name: "Settings", icon: "https://img.icons8.com/fluency/512/settings.png" }
+        ];
+
+        function filterApps() {
+            const query = document.getElementById('search-bar').value.toLowerCase();
+            const results = document.getElementById('search-results');
+            results.innerHTML = '';
+
+            const filtered = apps.filter(a => a.name.toLowerCase().includes(query));
+            filtered.forEach(app => {
+                const card = document.createElement('div');
+                card.className = 'app-card';
+                card.innerHTML = `
+                    <img src="${app.icon}" alt="${app.name}">
+                    <span>${app.name}</span>
+                `;
+                results.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
