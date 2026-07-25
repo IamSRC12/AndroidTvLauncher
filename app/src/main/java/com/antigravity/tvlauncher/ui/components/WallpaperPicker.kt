@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,6 +21,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil.compose.rememberAsyncImagePainter
@@ -31,6 +33,8 @@ fun WallpaperPicker(
     onSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val ctx = LocalContext.current
+
     val solidColors = listOf(
         "#000000" to "Pitch Black",
         "#0A1128" to "Navy",
@@ -43,14 +47,27 @@ fun WallpaperPicker(
     )
 
     val sampleImages = listOf(
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80",
-        "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=600&q=80",
-        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80",
-        "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&q=80"
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
+        "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=800&q=80",
+        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
+        "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&q=80",
+        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80",
+        "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80",
+        "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&q=80",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
     )
 
     val imgPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) onSelected(uri.toString())
+        if (uri != null) {
+            try {
+                ctx.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            onSelected(uri.toString())
+            onDismiss()
+        }
     }
 
     Box(
@@ -64,7 +81,7 @@ fun WallpaperPicker(
     ) {
         Column(
             modifier = Modifier
-                .width(520.dp)
+                .width(560.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color(0xFF111111))
                 .padding(24.dp)
@@ -74,44 +91,42 @@ fun WallpaperPicker(
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(4),
-                modifier = Modifier.height(220.dp),
+                modifier = Modifier.height(260.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement   = Arrangement.spacedBy(10.dp)
             ) {
-                // Sample images section
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
-                        text  = "Wallpapers",
+                        text  = "Curated 4K Wallpapers",
                         style = MaterialTheme.typography.labelLarge,
                         color = TextSecondary
                     )
                 }
                 items(sampleImages) { url ->
-                    WpImageTile(url = url, onClick = { onSelected(url) })
+                    WpImageTile(url = url, onClick = { onSelected(url); onDismiss() })
                 }
 
-                // Solid colours section
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
-                        text  = "Solid Colors",
+                        text  = "Solid Dark Colors",
                         style = MaterialTheme.typography.labelLarge,
                         color = TextSecondary,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
                 items(solidColors) { (hex, _) ->
-                    WpColorTile(hex = hex, onClick = { onSelected(hex) })
+                    WpColorTile(hex = hex, onClick = { onSelected(hex); onDismiss() })
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                WpButton(text = "Choose from Gallery", onClick = { imgPicker.launch("image/*") }, modifier = Modifier.weight(1f))
+                WpButton(text = "Choose from Gallery", onClick = { runCatching { imgPicker.launch("image/*") } }, modifier = Modifier.weight(1f))
                 WpButton(text = "Cancel", onClick = onDismiss, modifier = Modifier.weight(1f), outline = true)
             }
         }
@@ -126,7 +141,11 @@ private fun WpImageTile(url: String, onClick: () -> Unit) {
             .aspectRatio(1.78f)
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xFF1E1E1E))
-            .then(if (focused) Modifier.background(Color(0xFF333333)) else Modifier)
+            .border(
+                width = if (focused) 2.dp else 0.dp,
+                color = if (focused) LocalAccentColor.current else Color.Transparent,
+                shape = RoundedCornerShape(10.dp)
+            )
             .onFocusChanged { focused = it.isFocused }
             .focusable()
             .onKeyEvent { ev ->
@@ -148,15 +167,16 @@ private fun WpImageTile(url: String, onClick: () -> Unit) {
 @Composable
 private fun WpColorTile(hex: String, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
-    val color = Color(android.graphics.Color.parseColor(hex))
+    val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.Black }
     Box(
         modifier = Modifier
-            .aspectRatio(1f)
+            .aspectRatio(1.78f)
             .clip(RoundedCornerShape(10.dp))
             .background(color)
-            .then(
-                if (focused) Modifier.background(Color(0x44FFFFFF))
-                else Modifier
+            .border(
+                width = if (focused) 2.dp else 1.dp,
+                color = if (focused) Color.White else Color(0x33FFFFFF),
+                shape = RoundedCornerShape(10.dp)
             )
             .onFocusChanged { focused = it.isFocused }
             .focusable()
@@ -182,10 +202,9 @@ private fun WpButton(
             .clip(RoundedCornerShape(10.dp))
             .background(
                 when {
-                    focused && outline -> Color.White
                     focused -> Color.White
                     outline -> Color(0xFF222222)
-                    else -> Color(0xFF2979FF)
+                    else -> LocalAccentColor.current
                 }
             )
             .onFocusChanged { focused = it.isFocused }
@@ -201,7 +220,7 @@ private fun WpButton(
         Text(
             text  = text,
             style = MaterialTheme.typography.titleMedium,
-            color = if (focused || !outline) Color.White else Color(0xFFAAAAAA)
+            color = if (focused) Color.Black else Color.White
         )
     }
 }

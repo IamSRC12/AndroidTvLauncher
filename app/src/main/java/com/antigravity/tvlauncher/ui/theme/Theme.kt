@@ -1,58 +1,75 @@
 package com.antigravity.tvlauncher.ui.theme
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.tv.material3.darkColorScheme
+import com.antigravity.tvlauncher.data.ThemePreset
 
-// ── Colour palette (FLauncher / Google TV inspired) ──────────────────────────
-val Black          = Color(0xFF000000)
-val SurfaceDark    = Color(0xFF0F0F0F)
-val SurfaceCard    = Color(0xFF1A1A1A)
-val Divider        = Color(0xFF2A2A2A)
-val TextPrimary    = Color(0xFFFFFFFF)
-val TextSecondary  = Color(0xFF9E9E9E)
-val AccentBlue     = Color(0xFF2979FF)
-val AccentBlueDim  = Color(0xFF1A4A8A)
-val FocusGlow      = Color(0xFFFFFFFF)
+// ── Static colors (never change with theme) ───────────────────────────────────
+val Black        = Color(0xFF000000)
+val TextPrimary  = Color(0xFFFFFFFF)
+val TextSecondary= Color(0xFFA0A0A0)
 
-private val DarkColors = darkColorScheme(
-    primary            = TextPrimary,
-    onPrimary          = Black,
-    primaryContainer   = SurfaceCard,
-    onPrimaryContainer = TextPrimary,
-    secondary          = TextSecondary,
-    onSecondary        = TextPrimary,
-    background         = Black,
-    onBackground       = TextPrimary,
-    surface            = SurfaceDark,
-    onSurface          = TextPrimary,
-    surfaceVariant     = SurfaceCard,
-    onSurfaceVariant   = TextSecondary,
-    border             = Divider
-)
+// ── CompositionLocals for dynamic theme tokens ────────────────────────────────
 
-val LauncherTypography = Typography(
-    headlineLarge  = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold,     fontSize = 32.sp, lineHeight = 40.sp, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold,     fontSize = 26.sp, lineHeight = 34.sp, letterSpacing = (-0.3).sp),
-    titleLarge     = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 28.sp),
-    titleMedium    = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium,   fontSize = 16.sp, lineHeight = 24.sp, letterSpacing = 0.1.sp),
-    bodyLarge      = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal,   fontSize = 16.sp, lineHeight = 24.sp, letterSpacing = 0.5.sp),
-    bodyMedium     = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal,   fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.25.sp),
-    labelLarge     = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium,   fontSize = 13.sp, lineHeight = 18.sp),
-    labelMedium    = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal,   fontSize = 11.sp, lineHeight = 16.sp, letterSpacing = 0.5.sp)
-)
+/** Current accent color — changes when user picks a preset or custom color. */
+val LocalAccentColor = staticCompositionLocalOf { Color(0xFF4FC3F7) }
 
+/** Current background color — changes with preset. */
+val LocalBgColor = staticCompositionLocalOf { Color(0xFF080C14) }
+
+/** Current surface/card background color — changes with preset. */
+val LocalSurfaceColor = staticCompositionLocalOf { Color(0xFF0F1520) }
+
+/** Current card corner radius in dp — changes with preset. */
+val LocalCardRadius = staticCompositionLocalOf { 8 }
+
+// ── Theme wrapper ─────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun TvLauncherTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = DarkColors,
-        typography  = LauncherTypography,
-        content     = content
+fun TvLauncherTheme(
+    preset: ThemePreset = ThemePreset.byName("Midnight"),
+    content: @Composable () -> Unit
+) {
+    val accentColor  = parseHex(preset.accentHex)
+    val bgColor      = parseHex(preset.backgroundHex)
+    val surfaceColor = parseHex(preset.surfaceHex)
+
+    val colorScheme = darkColorScheme(
+        primary         = accentColor,
+        onPrimary       = Color.Black,
+        secondary       = accentColor.copy(alpha = 0.7f),
+        onSecondary     = Color.Black,
+        tertiary        = accentColor.copy(alpha = 0.5f),
+        background      = bgColor,
+        surface         = surfaceColor,
+        onBackground    = TextPrimary,
+        onSurface       = TextPrimary,
+        surfaceVariant  = surfaceColor.copy(alpha = 0.7f),
+        onSurfaceVariant= TextSecondary,
     )
+
+    CompositionLocalProvider(
+        LocalAccentColor provides accentColor,
+        LocalBgColor     provides bgColor,
+        LocalSurfaceColor provides surfaceColor,
+        LocalCardRadius  provides preset.cardRadiusDp,
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content     = content
+        )
+    }
 }
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+
+/** Safely parse a hex color string, returning a fallback if invalid. */
+fun parseHex(hex: String, fallback: Color = Color(0xFF080C14)): Color = try {
+    Color(android.graphics.Color.parseColor(hex))
+} catch (_: Exception) { fallback }

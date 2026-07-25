@@ -96,7 +96,7 @@ fun BluetoothOverlay(
                     Icon(
                         imageVector = Icons.Default.Bluetooth,
                         contentDescription = null,
-                        tint = AccentBlue,
+                        tint = LocalAccentColor.current,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
@@ -292,13 +292,13 @@ private fun DeviceRow(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(AccentBlueDim),
+                .background(LocalAccentColor.current.copy(alpha = 0.25f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = typeIcon,
                 contentDescription = null,
-                tint = AccentBlue,
+                tint = LocalAccentColor.current,
                 modifier = Modifier.size(20.dp)
             )
         }

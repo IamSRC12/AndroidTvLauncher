@@ -44,15 +44,6 @@
             z-index: 10;
         }
 
-        .sidebar-logo {
-            font-weight: 800;
-            font-size: 1.2rem;
-            color: #ffffff;
-            margin-bottom: 48px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-
         .sidebar-menu {
             display: flex;
             flex-direction: column;
@@ -182,6 +173,7 @@
         .app-card {
             width: 130px;
             height: 150px;
+            flex-shrink: 0;
             background: rgba(30, 30, 30, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
@@ -224,6 +216,16 @@
 
         .app-card:hover img {
             transform: scale(1.05);
+        }
+
+        .app-card.add-card {
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .app-card.add-card:hover {
+            border-color: #4FC3F7;
+            background: rgba(79, 195, 247, 0.1);
         }
 
         /* Search Panel */
@@ -355,7 +357,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 32px;
-            width: 420px;
+            width: 440px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -370,7 +372,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -383,6 +385,7 @@
             transition: all 0.2s ease;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .dialog-item:hover {
@@ -396,10 +399,12 @@
     <div class="launcher-container" id="launcher">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="sidebar-logo">CAL</div>
             <div class="sidebar-menu">
                 <div class="menu-item active" onclick="switchTab('home', this)" title="Home">
                     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                </div>
+                <div class="menu-item" onclick="switchTab('inputs', this)" title="HDMI Inputs">
+                    <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
                 </div>
                 <div class="menu-item" onclick="switchTab('search', this)" title="Search">
                     <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -410,8 +415,8 @@
                 <div class="menu-item" onclick="switchTab('wallpaper', this)" title="Wallpaper">
                     <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.08-.54-.42-.99-.93-1.19l-1.3-.52c-.67-.27-1.17-.83-1.35-1.52L16 9.41V8c0-1.1-.9-2-2-2h-2V3z"/></svg>
                 </div>
-                <div class="menu-item" onclick="switchTab('settings', this)" title="Settings">
-                    <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                <div class="menu-item" onclick="openSystemSettings()" title="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5-3.5z"/></svg>
                 </div>
             </div>
         </div>
@@ -425,50 +430,98 @@
                     <span class="date" id="date">Wednesday, Jul 15</span>
                 </div>
                 <div class="status-indicators">
-                    <!-- Wifi Connected (Ethernet supported check) -->
+                    <!-- Wifi Connected -->
                     <svg class="status-icon" viewBox="0 0 24 24"><path d="M12 21l-12-12c4.97-4.97 13.03-4.97 18 0l-6 12zm0-18C8.13 3 5 4.56 5 6.5s3.13 3.5 7 3.5 7-1.56 7-3.5S15.87 3 12 3z"/></svg>
-                    <!-- Bluetooth enabled -->
-                    <svg class="status-icon" viewBox="0 0 24 24" style="fill: #2196F3;"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83z"/></svg>
-                    <!-- Battery Outline -->
-                    <svg class="status-icon" viewBox="0 0 24 24"><path d="M17 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm1 10h-2V9h2v6zm4-5h-2v4h2v-4z"/></svg>
+                    <!-- Bluetooth (Red if disconnected, Green + Device Name if connected) -->
+                    <div id="bt-status-container" style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="switchTab('bluetooth', document.querySelector('[title=Bluetooth]'))">
+                        <svg id="bt-icon" class="status-icon" viewBox="0 0 24 24" style="fill: #EF5350; opacity: 1;"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.29L13 18.17v-3.76l1.88 1.88z"/></svg>
+                        <span id="bt-device-name" style="color: #4CAF50; font-weight: 600; font-size: 0.95rem; display: none;"></span>
+                    </div>
                 </div>
             </div>
 
             <!-- Home Tab Panel -->
             <div class="panel active" id="panel-home">
-                <div class="section-title">Favorites</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="section-title" style="margin:0;">Favorites</div>
+                    <button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;" onclick="openFavDialog()">+ Add App</button>
+                </div>
+                <div class="tv-row" id="fav-row">
+                    <!-- Dynamic Favorites Cards -->
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">Recommended Apps</div>
                 <div class="tv-row">
-                    <div class="app-card">
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('YouTube', 'https://img.icons8.com/color/512/youtube-play.png')">
                         <img src="https://img.icons8.com/color/512/youtube-play.png" alt="YouTube">
                         <span>YouTube</span>
                     </div>
-                    <div class="app-card">
-                        <img src="https://img.icons8.com/color/512/netflix--v1.png" alt="Netflix">
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Netflix', 'https://img.icons8.com/color/512/netflix.png')">
+                        <img src="https://img.icons8.com/color/512/netflix.png" alt="Netflix">
                         <span>Netflix</span>
                     </div>
-                    <div class="app-card">
-                        <img src="https://img.icons8.com/color/512/plex.png" alt="Plex">
-                        <span>Plex</span>
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Prime Video', 'https://img.icons8.com/color/512/amazon-prime-video.png')">
+                        <img src="https://img.icons8.com/color/512/amazon-prime-video.png" alt="Prime Video">
+                        <span>Prime Video</span>
+                    </div>
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Disney+', 'https://img.icons8.com/color/512/disney-plus.png')">
+                        <img src="https://img.icons8.com/color/512/disney-plus.png" alt="Disney+">
+                        <span>Disney+</span>
                     </div>
                 </div>
 
-                <div class="section-title">All Apps</div>
+                <div class="section-title" style="margin-top: 16px;">All Apps</div>
                 <div class="tv-row">
-                    <div class="app-card">
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Spotify', 'https://img.icons8.com/color/512/spotify--v1.png')">
                         <img src="https://img.icons8.com/color/512/spotify--v1.png" alt="Spotify">
                         <span>Spotify</span>
                     </div>
-                    <div class="app-card">
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Twitch', 'https://img.icons8.com/color/512/twitch.png')">
                         <img src="https://img.icons8.com/color/512/twitch.png" alt="Twitch">
                         <span>Twitch</span>
                     </div>
-                    <div class="app-card">
+                    <div class="app-card" oncontextmenu="event.preventDefault(); openContextMenu('Browser', 'https://img.icons8.com/color/512/chrome.png')">
                         <img src="https://img.icons8.com/color/512/chrome.png" alt="Browser">
                         <span>Browser</span>
                     </div>
-                    <div class="app-card">
+                    <div class="app-card" onclick="openSystemSettings()" oncontextmenu="event.preventDefault(); openContextMenu('Settings', 'https://img.icons8.com/fluency/512/settings.png')">
                         <img src="https://img.icons8.com/fluency/512/settings.png" alt="Settings">
                         <span>Settings</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inputs Tab Panel -->
+            <div class="panel" id="panel-inputs">
+                <div class="section-title">HDMI & Input Sources</div>
+                <div class="settings-container">
+                    <div class="settings-card" onclick="switchHdmi('HDMI 1', this)">
+                        <div class="settings-info">
+                            <h3>HDMI 1</h3>
+                            <p>Cable / Satellite Box</p>
+                        </div>
+                        <span class="hdmi-state" style="color: #4CAF50; font-weight: 600;">Active Input</span>
+                    </div>
+                    <div class="settings-card" onclick="switchHdmi('HDMI 2', this)">
+                        <div class="settings-info">
+                            <h3>HDMI 2 (eARC / ARC)</h3>
+                            <p>PlayStation / Gaming Console</p>
+                        </div>
+                        <span class="hdmi-state" style="color: #888888;">Tap to Switch</span>
+                    </div>
+                    <div class="settings-card" onclick="switchHdmi('HDMI 3', this)">
+                        <div class="settings-info">
+                            <h3>HDMI 3</h3>
+                            <p>Blu-Ray / Media Player</p>
+                        </div>
+                        <span class="hdmi-state" style="color: #888888;">Tap to Switch</span>
+                    </div>
+                    <div class="settings-card" onclick="switchHdmi('AV / Composite', this)">
+                        <div class="settings-info">
+                            <h3>AV / Composite</h3>
+                            <p>Analog TV Input</p>
+                        </div>
+                        <span class="hdmi-state" style="color: #888888;">Tap to Switch</span>
                     </div>
                 </div>
             </div>
@@ -525,38 +578,6 @@
                     <div class="wallpaper-item" style="background-color: #1C0F1A;" onclick="changeBg('linear-gradient(180deg, #1C0F1A 0%, #000000 100%)')"></div>
                 </div>
             </div>
-
-            <!-- Settings Tab Panel -->
-            <div class="panel" id="panel-settings">
-                <div class="section-title">Launcher Configuration</div>
-                <div class="settings-container">
-                    <div class="settings-card" onclick="openRemapDialog()">
-                        <div class="settings-info">
-                            <h3>Remote Key Mapping</h3>
-                            <p>Assign custom apps or shortcuts to remote control buttons</p>
-                        </div>
-                        <button class="btn btn-outline">Configure</button>
-                    </div>
-                    <div class="settings-card">
-                        <div class="settings-info">
-                            <h3>App Columns Grid</h3>
-                            <p>Adjust column sizing options</p>
-                        </div>
-                        <select style="background: #111; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 8px;">
-                            <option>5 Columns</option>
-                            <option>6 Columns</option>
-                            <option>7 Columns</option>
-                        </select>
-                    </div>
-                    <div class="settings-card">
-                        <div class="settings-info">
-                            <h3>Manage Hidden Apps</h3>
-                            <p>Restore hidden applications to launcher view</p>
-                        </div>
-                        <button class="btn btn-outline">Manage</button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -579,45 +600,120 @@
         </div>
     </div>
 
-    <!-- Remap Dialog -->
-    <div class="overlay" id="remap-dialog">
+    <!-- Favorites Dialog -->
+    <div class="overlay" id="fav-dialog">
         <div class="dialog">
-            <h3>Remote Key Remapper</h3>
-            <p style="color: #88; font-size: 0.95rem; margin-top:-10px;">Press a key on your remote or select a button below:</p>
-            <div class="dialog-list">
-                <div class="dialog-item" onclick="mapButton('RED Button')">
-                    <span>RED (F1) Button</span>
-                    <span style="color:#888">Unassigned</span>
-                </div>
-                <div class="dialog-item" onclick="mapButton('GREEN Button')">
-                    <span>GREEN (F2) Button</span>
-                    <span style="color:#888">Unassigned</span>
-                </div>
-                <div class="dialog-item" onclick="mapButton('BLUE Button')">
-                    <span>BLUE (F3) Button</span>
-                    <span style="color:#888">Unassigned</span>
-                </div>
-                <div class="dialog-item" onclick="mapButton('Channel Up')">
-                    <span>Channel Up</span>
-                    <span style="color:#888">Unassigned</span>
-                </div>
-            </div>
-            <button class="btn" onclick="closeRemapDialog()" style="margin-top: 10px;">Cancel</button>
+            <h3>Add Apps to Favorites</h3>
+            <p style="color: #888; font-size: 0.95rem; margin-top:-10px;">Select apps to pin to your Favorites row:</p>
+            <div class="dialog-list" id="fav-app-list"></div>
+            <button class="btn" onclick="closeFavDialog()" style="margin-top: 10px;">Done</button>
         </div>
     </div>
 
     <script>
+        const apps = [
+            { name: "YouTube", icon: "https://img.icons8.com/color/512/youtube-play.png" },
+            { name: "Netflix", icon: "https://img.icons8.com/color/512/netflix--v1.png" },
+            { name: "Plex", icon: "https://img.icons8.com/color/512/plex.png" },
+            { name: "Spotify", icon: "https://img.icons8.com/color/512/spotify--v1.png" },
+            { name: "Twitch", icon: "https://img.icons8.com/color/512/twitch.png" },
+            { name: "Browser", icon: "https://img.icons8.com/color/512/chrome.png" },
+            { name: "Settings", icon: "https://img.icons8.com/fluency/512/settings.png" }
+        ];
+
+        let favorites = ["YouTube", "Netflix", "Plex"];
+
+        function renderFavs() {
+            const favRow = document.getElementById('fav-row');
+            favRow.innerHTML = '';
+            
+            favorites.forEach(appName => {
+                const app = apps.find(a => a.name === appName);
+                if (!app) return;
+                const card = document.createElement('div');
+                card.className = 'app-card';
+                card.innerHTML = `
+                    <img src="${app.icon}" alt="${app.name}">
+                    <span>${app.name}</span>
+                `;
+                favRow.appendChild(card);
+            });
+
+            // Add App Card at end of row
+            const addCard = document.createElement('div');
+            addCard.className = 'app-card add-card';
+            addCard.onclick = openFavDialog;
+            addCard.innerHTML = `
+                <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: #4FC3F7; margin-bottom: 8px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span style="color: #4FC3F7;">Add App</span>
+            `;
+            favRow.appendChild(addCard);
+        }
+
+        function openFavDialog() {
+            const listEl = document.getElementById('fav-app-list');
+            listEl.innerHTML = '';
+            apps.forEach(app => {
+                const isFav = favorites.includes(app.name);
+                const item = document.createElement('div');
+                item.className = 'dialog-item';
+                item.onclick = () => toggleFav(app.name);
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <img src="${app.icon}" style="width:32px; height:32px; border-radius:6px;">
+                        <span>${app.name}</span>
+                    </div>
+                    <span style="color:${isFav ? '#4FC3F7' : '#888'}">${isFav ? '★ Favorite' : '☆ Add'}</span>
+                `;
+                listEl.appendChild(item);
+            });
+            document.getElementById('fav-dialog').style.display = 'flex';
+        }
+
+        function toggleFav(appName) {
+            if (favorites.includes(appName)) {
+                favorites = favorites.filter(f => f !== appName);
+            } else {
+                favorites.push(appName);
+            }
+            renderFavs();
+            openFavDialog();
+        }
+
+        function closeFavDialog() {
+            document.getElementById('fav-dialog').style.display = 'none';
+        }
+
+        // Directly open System Settings
+        function openSystemSettings() {
+            alert("Opening Android TV System Settings (android.provider.Settings.ACTION_SETTINGS)...");
+        }
+
         // Tab switching logic
         function switchTab(tabId, el) {
             document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
             
-            el.classList.add('active');
+            if (el) el.classList.add('active');
             document.getElementById('panel-' + tabId).classList.add('active');
 
             if(tabId === 'search') {
                 filterApps();
             }
+        }
+
+        // HDMI switching logic
+        function switchHdmi(name, cardEl) {
+            document.querySelectorAll('#panel-inputs .hdmi-state').forEach(el => {
+                el.textContent = "Tap to Switch";
+                el.style.color = "#888888";
+                el.style.fontWeight = "normal";
+            });
+            const stateEl = cardEl.querySelector('.hdmi-state');
+            stateEl.textContent = "Active Input";
+            stateEl.style.color = "#4CAF50";
+            stateEl.style.fontWeight = "600";
+            alert("Switching TV Input to " + name + " via TvContract / TvInputManager...");
         }
 
         // Live Clock
@@ -632,6 +728,7 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+        renderFavs();
 
         // Change Background
         function changeBg(bgString) {
@@ -642,13 +739,27 @@
         function connectDevice(name) {
             const shortName = name.split(' ')[0];
             const stateText = document.getElementById('state-' + shortName);
-            stateText.textContent = "Connecting...";
-            stateText.style.color = "#FFC107";
+            const btIcon = document.getElementById('bt-icon');
+            const btName = document.getElementById('bt-device-name');
 
-            setTimeout(() => {
-                stateText.textContent = "Connected";
-                stateText.style.color = "#4CAF50";
-            }, 2000);
+            if (stateText.textContent === "Connected") {
+                stateText.textContent = "Disconnected";
+                stateText.style.color = "#888888";
+                btIcon.style.fill = "#EF5350"; // Red when disconnected
+                btName.style.display = "none";
+                btName.textContent = "";
+            } else {
+                stateText.textContent = "Connecting...";
+                stateText.style.color = "#FFC107";
+
+                setTimeout(() => {
+                    stateText.textContent = "Connected";
+                    stateText.style.color = "#4CAF50";
+                    btIcon.style.fill = "#4CAF50"; // Green when connected
+                    btName.style.display = "inline";
+                    btName.textContent = name;
+                }, 1500);
+            }
         }
 
         // Pairing dialogue
@@ -659,29 +770,6 @@
             document.getElementById('pair-dialog').style.display = 'none';
         }
 
-        // Remap dialogue
-        function openRemapDialog() {
-            document.getElementById('remap-dialog').style.display = 'flex';
-        }
-        function closeRemapDialog() {
-            document.getElementById('remap-dialog').style.display = 'none';
-        }
-        function mapButton(btnName) {
-            alert("Press a button on your remote then choose the App you want to launch. Handled via android.view.KeyEvent in APK.");
-            closeRemapDialog();
-        }
-
-        // Search filtering simulation
-        const apps = [
-            { name: "YouTube", icon: "https://img.icons8.com/color/512/youtube-play.png" },
-            { name: "Netflix", icon: "https://img.icons8.com/color/512/netflix--v1.png" },
-            { name: "Plex", icon: "https://img.icons8.com/color/512/plex.png" },
-            { name: "Spotify", icon: "https://img.icons8.com/color/512/spotify--v1.png" },
-            { name: "Twitch", icon: "https://img.icons8.com/color/512/twitch.png" },
-            { name: "Browser", icon: "https://img.icons8.com/color/512/chrome.png" },
-            { name: "Settings", icon: "https://img.icons8.com/fluency/512/settings.png" }
-        ];
-
         function filterApps() {
             const query = document.getElementById('search-bar').value.toLowerCase();
             const results = document.getElementById('search-results');
@@ -691,6 +779,9 @@
             filtered.forEach(app => {
                 const card = document.createElement('div');
                 card.className = 'app-card';
+                if (app.name === 'Settings') {
+                    card.onclick = openSystemSettings;
+                }
                 card.innerHTML = `
                     <img src="${app.icon}" alt="${app.name}">
                     <span>${app.name}</span>

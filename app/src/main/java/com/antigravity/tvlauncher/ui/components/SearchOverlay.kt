@@ -31,9 +31,6 @@ import com.antigravity.tvlauncher.ui.theme.*
 fun SearchOverlay(
     apps: List<AppInfo>,
     onLaunch: (String) -> Unit,
-    onFavorite: (String) -> Unit,
-    onHide: (String) -> Unit,
-    onUninstall: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
@@ -114,11 +111,9 @@ fun SearchOverlay(
                 ) {
                     items(filtered, key = { it.packageName }) { app ->
                         AppCard(
-                            app        = app,
-                            onClick    = { onLaunch(app.packageName) },
-                            onFavorite = { onFavorite(app.packageName) },
-                            onHide     = { onHide(app.packageName) },
-                            onUninstall = { onUninstall(app.packageName) }
+                            app         = app,
+                            onClick     = { onLaunch(app.packageName) },
+                            onLongPress = { onLaunch(app.packageName) }
                         )
                     }
                 }

@@ -1,147 +1,212 @@
 package com.antigravity.tvlauncher.ui.components
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
-import com.antigravity.tvlauncher.ui.theme.TextPrimary
-import com.antigravity.tvlauncher.ui.theme.TextSecondary
-import com.antigravity.tvlauncher.util.BluetoothHelper
-import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.sp
+import androidx.tv.material3.*
+import com.antigravity.tvlauncher.data.Profile
+import com.antigravity.tvlauncher.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Top header bar:
+ *  Left  — live digital clock + date
+ *  Right — WiFi icon | Bluetooth (RED if disconnected, GREEN + Device Name if connected) | HDMI Inputs | Profile | Search | Settings
+ *
+ * All items are individually TV-focusable.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TopBar(
-    bluetoothHelper: BluetoothHelper,
+    is24h: Boolean,
+    activeProfile: Profile,
+    connectedBtDeviceName: String?,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onBluetoothClick: () -> Unit,
+    onInputsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val ctx = LocalContext.current
-    var time by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
-    var netConnected  by remember { mutableStateOf(false) }
-    val btEnabled = bluetoothHelper.isEnabled()
+    var timeString by remember { mutableStateOf("") }
+    var dateString by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        val tf = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val df = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
+    // Update clock every second
+    LaunchedEffect(is24h) {
         while (true) {
-            val now = Date()
-            time = tf.format(now)
-            date = df.format(now)
-            netConnected = checkNetwork(ctx)
-            delay(2000L)
+            val now = Calendar.getInstance()
+            val fmt = if (is24h) "HH:mm" else "hh:mm a"
+            timeString = SimpleDateFormat(fmt, Locale.getDefault()).format(now.time)
+            dateString = SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(now.time)
+            kotlinx.coroutines.delay(1_000L)
         }
     }
 
     Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 4.dp)
     ) {
-        // Left: Time + Date
+        // ── Left: Clock + Date ──────────────────────────────────────────────
+        Column {
+            Text(
+                text       = timeString,
+                fontSize   = 36.sp,
+                fontWeight = FontWeight.Bold,
+                color      = TextPrimary
+            )
+            Text(
+                text  = dateString,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+
+        // ── Right: Status icons + Bluetooth + Inputs + Profile + Search + Settings ───────────
         Row(
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(
-                text  = time,
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
+            // WiFi icon (display-only status indicator)
+            Icon(
+                imageVector        = Icons.Default.Wifi,
+                contentDescription = "Network",
+                tint               = TextSecondary,
+                modifier           = Modifier.size(20.dp)
             )
-            Text(
-                text  = date,
-                style = MaterialTheme.typography.titleMedium,
-                color = TextSecondary,
-                modifier = Modifier.padding(bottom = 3.dp)
-            )
-        }
 
-        // Right: status icons
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            WifiStatusIcon(connected = netConnected)
-            BluetoothStatusIcon(enabled = btEnabled)
+            // Bluetooth Status Indicator & Quick Opener
+            // RED if nothing connected, GREEN + Device Name if connected
+            TopBarAction(onClick = onBluetoothClick) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.Bluetooth,
+                        contentDescription = "Bluetooth",
+                        tint               = if (connectedBtDeviceName != null) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                        modifier           = Modifier.size(20.dp)
+                    )
+                    if (connectedBtDeviceName != null) {
+                        Text(
+                            text       = connectedBtDeviceName,
+                            fontSize   = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = Color(0xFF4CAF50)
+                        )
+                    }
+                }
+            }
+
+            // HDMI Inputs Switcher Button
+            TopBarAction(onClick = onInputsClick) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.Input,
+                        contentDescription = "Inputs",
+                        tint               = TextPrimary,
+                        modifier           = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text       = "Inputs",
+                        fontSize   = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color      = TextPrimary
+                    )
+                }
+            }
+
+            // Profile avatar — focusable, opens profile switcher
+            TopBarAction(onClick = onProfileClick) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(
+                            try { Color(android.graphics.Color.parseColor(activeProfile.avatarColorHex)) }
+                            catch (_: Exception) { LocalAccentColor.current }
+                        )
+                ) {
+                    Text(
+                        text       = activeProfile.initials,
+                        fontSize   = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color      = Color.Black
+                    )
+                }
+            }
+
+            // Search button
+            TopBarAction(onClick = onSearchClick) {
+                Icon(
+                    imageVector        = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint               = TextPrimary,
+                    modifier           = Modifier.size(22.dp)
+                )
+            }
+
+            // Settings button — opens System Settings directly
+            TopBarAction(onClick = onSettingsClick) {
+                Icon(
+                    imageVector        = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint               = TextPrimary,
+                    modifier           = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }
 
-// ── Network check (Wi-Fi OR Ethernet) ────────────────────────────────────────
-private fun checkNetwork(ctx: Context): Boolean {
-    val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val net = cm.activeNetwork ?: return false
-    val cap = cm.getNetworkCapabilities(net) ?: return false
-    return cap.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-           cap.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
-           cap.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-}
-
-// ── Wi-Fi icon drawn with Canvas ─────────────────────────────────────────────
+// ── Focusable top-bar icon button ─────────────────────────────────────────────
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun WifiStatusIcon(connected: Boolean, modifier: Modifier = Modifier) {
-    val color = if (connected) Color.White else Color(0xFF555555)
-    Canvas(modifier = modifier.size(22.dp)) {
-        val cx = size.width / 2f
-        val cy = size.height * 0.68f
-        val dotR = size.width * 0.1f
+private fun TopBarAction(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    var focused by remember { mutableStateOf(false) }
 
-        // Dot
-        drawCircle(color = color, radius = dotR, center = Offset(cx, cy))
-
-        // Three arcs
-        listOf(0.22f, 0.40f, 0.60f).forEach { factor ->
-            val r = size.width * factor
-            drawArc(
-                color = color,
-                startAngle = 200f,
-                sweepAngle = 140f,
-                useCenter = false,
-                topLeft = Offset(cx - r, cy - r),
-                size = Size(r * 2, r * 2),
-                style = Stroke(width = size.width * 0.075f, cap = StrokeCap.Round)
-            )
-        }
-    }
-}
-
-// ── Bluetooth icon ────────────────────────────────────────────────────────────
-@Composable
-fun BluetoothStatusIcon(enabled: Boolean, modifier: Modifier = Modifier) {
-    val color = if (enabled) Color(0xFF448AFF) else Color(0xFF555555)
-    Canvas(modifier = modifier.size(20.dp)) {
-        val w = size.width
-        val h = size.height
-        val stroke = Stroke(width = w * 0.12f, cap = StrokeCap.Round)
-        // Classic Bluetooth B-shape path
-        val path = Path().apply {
-            moveTo(w * 0.3f, h * 0.3f)
-            lineTo(w * 0.7f, h * 0.7f)
-            lineTo(w * 0.5f, h * 0.9f)
-            lineTo(w * 0.5f, h * 0.1f)
-            lineTo(w * 0.7f, h * 0.3f)
-            lineTo(w * 0.3f, h * 0.7f)
-        }
-        drawPath(path = path, color = color, style = stroke)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .wrapContentWidth()
+            .height(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (focused) Color(0x33FFFFFF) else Color.Transparent)
+            .onFocusChanged { focused = it.isFocused }
+            .focusable()
+            .onKeyEvent { ev ->
+                if ((ev.key == Key.DirectionCenter || ev.key == Key.Enter)
+                    && ev.type == KeyEventType.KeyUp
+                ) { onClick(); true } else false
+            }
+            .padding(horizontal = 8.dp)
+    ) {
+        content()
     }
 }

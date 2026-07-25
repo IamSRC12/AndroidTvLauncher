@@ -51,6 +51,47 @@ class BluetoothHelper(private val context: Context) {
         } catch (e: SecurityException) { false }
     }
 
+    @SuppressLint("MissingPermission")
+    fun getConnectedDeviceName(): String? {
+        if (!isSupported() || !isEnabled() || !hasPermission()) return null
+        return try {
+            val bonded = adapter?.bondedDevices ?: return null
+            for (dev in bonded) {
+                val isConnected = try {
+                    val method = dev.javaClass.getMethod("isConnected")
+                    method.invoke(dev) as? Boolean ?: false
+                } catch (_: Exception) { false }
+                if (isConnected) {
+                    return dev.name ?: "Connected Device"
+                }
+            }
+            null
+        } catch (_: Exception) { null }
+    }
+
+    /**
+     * Sends broadcast intent compatible with AndroidTVBluetooth (saihgupr/AndroidTVBluetooth).
+     * Action: "com.saihgupr.btcontrol.ACTION_CONNECT" or "com.saihgupr.btcontrol.ACTION_DISCONNECT"
+     */
+    fun sendBtControlBroadcast(action: String, name: String? = null, address: String? = null) {
+        try {
+            val intent = Intent(action).apply {
+                setClassName("com.saihgupr.btcontrol", "com.saihgupr.btcontrol.BluetoothControlReceiver")
+                if (!name.isNullOrBlank()) putExtra("name", name)
+                if (!address.isNullOrBlank()) putExtra("address", address)
+            }
+            context.sendBroadcast(intent)
+        } catch (_: Exception) {}
+    }
+
+    fun connectViaBtControl(deviceName: String) {
+        sendBtControlBroadcast("com.saihgupr.btcontrol.ACTION_CONNECT", name = deviceName)
+    }
+
+    fun disconnectViaBtControl(deviceName: String) {
+        sendBtControlBroadcast("com.saihgupr.btcontrol.ACTION_DISCONNECT", name = deviceName)
+    }
+
     fun openBluetoothSettings(): Intent =
         Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 

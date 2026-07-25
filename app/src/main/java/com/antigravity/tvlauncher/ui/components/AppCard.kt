@@ -1,66 +1,49 @@
 package com.antigravity.tvlauncher.ui.components
 
-import android.graphics.drawable.Drawable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.focusable
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
+import androidx.tv.material3.*
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.antigravity.tvlauncher.data.AppInfo
-import com.antigravity.tvlauncher.ui.theme.TextPrimary
-import com.antigravity.tvlauncher.ui.theme.TextSecondary
+import com.antigravity.tvlauncher.ui.theme.*
 
 /**
- * TV-optimised app card:
- * • NO border rings — just a rounded-square icon (exactly like Live TV reference image)
- * • Smooth spring scale animation on focus (1.0 → 1.18)
- * • Long-press (600 ms DPAD_CENTER hold) shows context menu
+ * TV-optimised app card.
+ * Hardware accelerated, smooth 60fps spring scale on focus (1.0 → 1.12)
  */
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun AppCard(
     app: AppInfo,
     onClick: () -> Unit,
-    onFavorite: () -> Unit,
-    onHide: () -> Unit,
-    onUninstall: () -> Unit,
-    modifier: Modifier = Modifier
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
+    showLaunchCount: Boolean = false
 ) {
     var focused   by remember { mutableStateOf(false) }
-    var menuOpen  by remember { mutableStateOf(false) }
     var holdStart by remember { mutableStateOf(0L) }
 
+    val accentColor = LocalAccentColor.current
+    val cardRadius  = LocalCardRadius.current
+
     val scale by animateFloatAsState(
-        targetValue  = if (focused) 1.18f else 1.0f,
+        targetValue   = if (focused) 1.12f else 1.0f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
+            dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness    = Spring.StiffnessMediumLow
         ),
         label = "cardScale"
@@ -79,85 +62,108 @@ fun AppCard(
             .focusable()
             .onKeyEvent { ev ->
                 when {
-                    (ev.key == Key.DirectionCenter || ev.key == Key.Enter) && ev.type == KeyEventType.KeyDown -> {
+                    (ev.key == Key.DirectionCenter || ev.key == Key.Enter)
+                            && ev.type == KeyEventType.KeyDown -> {
                         if (holdStart == 0L) holdStart = System.currentTimeMillis()
                         true
                     }
-                    (ev.key == Key.DirectionCenter || ev.key == Key.Enter) && ev.type == KeyEventType.KeyUp -> {
+                    (ev.key == Key.DirectionCenter || ev.key == Key.Enter)
+                            && ev.type == KeyEventType.KeyUp -> {
                         val held = System.currentTimeMillis() - holdStart
                         holdStart = 0L
-                        if (held >= 600L) menuOpen = true else onClick()
+                        if (held >= 600L) onLongPress() else onClick()
                         true
                     }
-                    ev.key == Key.Menu && ev.type == KeyEventType.KeyUp -> { menuOpen = true; true }
+                    ev.key == Key.Menu && ev.type == KeyEventType.KeyUp -> {
+                        onLongPress(); true
+                    }
                     else -> false
                 }
             }
     ) {
         Box {
-            // ── Icon box: rounded corners, NO border ─────────────────────────
+            // ── Icon box with hardware-accelerated focus ring ───────────────
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(20.dp))   // Same radius style as reference image
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(cardRadius.dp))
                     .background(if (focused) Color(0xFF2A2A2A) else Color(0xFF1A1A1A))
+                    .border(
+                        width = if (focused) 2.5.dp else 1.dp,
+                        color = if (focused) accentColor else Color(0x22FFFFFF),
+                        shape = RoundedCornerShape(cardRadius.dp)
+                    )
             ) {
                 Image(
                     painter = rememberAsyncImagePainter(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(app.icon)
-                            .crossfade(200)
+                            .crossfade(150)
                             .allowHardware(true)
                             .build()
                     ),
-                    contentDescription = app.label,
+                    contentDescription = app.displayLabel,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp)              // slight padding so icon doesn't bleed to edge
+                        .padding(10.dp)
                 )
             }
 
-            // ── Context menu ─────────────────────────────────────────────────
-            DropdownMenu(
-                expanded = menuOpen,
-                onDismissRequest = { menuOpen = false },
-                modifier = Modifier
-                    .background(Color(0xFF1E1E1E))
-                    .width(200.dp)
-            ) {
-                DropdownMenuItem(
-                    text = { MenuText(if (app.isFavorite) "Remove from Favourites" else "Add to Favourites") },
-                    onClick = { menuOpen = false; onFavorite() }
-                )
-                DropdownMenuItem(
-                    text = { MenuText("Hide App") },
-                    onClick = { menuOpen = false; onHide() }
-                )
-                HorizontalDivider(color = Color(0xFF333333))
-                DropdownMenuItem(
-                    text = { MenuText("Uninstall", color = Color(0xFFEF5350)) },
-                    onClick = { menuOpen = false; onUninstall() }
+            // ── NEW badge ───────────────────────────────────────────────────
+            if (app.isNew) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-4).dp)
+                        .background(Color(0xFF00C853), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text  = "NEW",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontSize = 8.sp
+                    )
+                }
+            }
+
+            // ── Favourite star badge ────────────────────────────────────────
+            if (app.isFavorite) {
+                androidx.compose.material3.Icon(
+                    imageVector        = Icons.Default.Star,
+                    contentDescription = "Favourite",
+                    tint               = accentColor,
+                    modifier           = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = (-2).dp, y = (-2).dp)
+                        .size(14.dp)
                 )
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
-        // ── App label ────────────────────────────────────────────────────────
+        // ── App label ───────────────────────────────────────────────────────
         Text(
-            text      = app.label,
-            style     = MaterialTheme.typography.labelLarge,
+            text      = app.displayLabel,
+            style     = MaterialTheme.typography.labelMedium,
             color     = if (focused) TextPrimary else TextSecondary,
             maxLines  = 1,
             overflow  = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
             modifier  = Modifier.width(100.dp)
         )
-    }
-}
 
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun MenuText(text: String, color: Color = Color.White) {
-    Text(text = text, style = MaterialTheme.typography.bodyMedium, color = color)
+        // ── Launch count label (only in Most Used row) ──────────────────────
+        if (showLaunchCount && app.launchCount > 0) {
+            Text(
+                text     = "${app.launchCount}×",
+                style    = MaterialTheme.typography.labelSmall,
+                color    = TextSecondary.copy(alpha = 0.6f),
+                fontSize = 9.sp,
+                modifier = Modifier.padding(top = 1.dp)
+            )
+        }
+    }
 }
